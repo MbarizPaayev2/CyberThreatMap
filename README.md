@@ -49,7 +49,7 @@ Since cron jobs don't run automatically in local dev unless simulated, you can m
 curl -H "Authorization: Bearer <YOUR_CRON_SECRET>" http://localhost:3000/api/cron/generate-events
 ```
 
-## ☁️ Deployment (Vercel)
+##  Deployment (Vercel)
 
 1. Connect your GitHub repository to Vercel.
 2. In the Vercel project settings, add all the environment variables from your `.env.local`.
