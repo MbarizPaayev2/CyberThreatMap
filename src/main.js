@@ -10,6 +10,7 @@ import { initThreatIntelPanel } from './modules/threatIntelPanel.js';
 import { initCountryDetail } from './modules/countryDetail.js';
 import { initAbuseIPDBStream } from './modules/abuseipdbProvider.js';
 import { initOTXStream } from './modules/otxProvider.js';
+import { initVirusTotalStream } from './modules/virustotalProvider.js';
 import { initTelemetryTracker } from './utils/telemetryTracker.js';
 import { qs, setText } from './utils/dom.js';
 
@@ -25,7 +26,7 @@ function startClock() {
 
 // App Initialization
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log("Initializing CyberThreat Map SOC platform with AbuseIPDB and OTX integration...");
+  console.log("Initializing CyberThreat Map SOC platform with AbuseIPDB, OTX, and VirusTotal integration...");
   
   startClock();
   initTelemetryTracker();
@@ -54,4 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize Real Live Threat Ingestion from OTX (AlienVault)
   await initOTXStream();
+
+  // Initialize VirusTotal (on-demand lookup service, 4/min, 500/day limits)
+  await initVirusTotalStream();
 });
