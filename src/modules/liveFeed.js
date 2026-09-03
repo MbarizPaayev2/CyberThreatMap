@@ -4,6 +4,7 @@ import { getState, setState, resetAllFilters, subscribe } from '../state/appStat
 import { getFilteredEvents } from '../state/selectors.js';
 import { onNewEvent, getEvents, getEventsPerSecond } from '../state/eventStore.js';
 import { getIOCsByCountry } from './threatIntelProvider.js';
+import { escapeHtml } from '../utils/sanitize.js';
 
 let sparklineHistory = new Array(60).fill(0);
 let unseenNewEventsCount = 0;
@@ -303,8 +304,8 @@ function updateFilterControlsUI() {
 
   container.innerHTML = chips.map(c => `
     <span class="active-filter-chip">
-      <span>${c.label}</span>
-      <button class="chip-del-btn" data-type="${c.type}">✕</button>
+      <span>${escapeHtml(c.label)}</span>
+      <button class="chip-del-btn" data-type="${escapeHtml(c.type)}">✕</button>
     </span>
   `).join('');
 
@@ -339,23 +340,23 @@ function createFeedRowElement(event, isNew = false) {
   li.dataset.eventId = event.id;
 
   li.innerHTML = `
-    <span class="feed-col-time font-mono">${time}</span>
-    <span class="feed-col-code font-mono">${event.source_code || 'UN'}</span>
+    <span class="feed-col-time font-mono">${escapeHtml(time)}</span>
+    <span class="feed-col-code font-mono">${escapeHtml(event.source_code || 'UN')}</span>
     <span class="feed-col-arrow">→</span>
-    <span class="feed-col-code font-mono">${event.target_code || 'UN'}</span>
+    <span class="feed-col-code font-mono">${escapeHtml(event.target_code || 'UN')}</span>
     <div class="feed-col-badge-wrapper">
       <span class="attack-type-badge font-mono" style="color: ${attackColor}; background-color: ${attackColor}14; border-color: ${attackColor}30;">
-        ${event.attack_type}
+        ${escapeHtml(event.attack_type)}
       </span>
     </div>
     <span class="feed-col-sev font-mono" style="color: ${sevColor};">
       <span class="sev-dot" style="background-color: ${sevColor};"></span>
-      ${sevLabel}
+      ${escapeHtml(sevLabel)}
     </span>
     <span class="feed-col-status font-mono">
       <span class="status-indicator"></span>Active
     </span>
-    <span class="feed-col-ago font-mono">${timeAgoStr}</span>
+    <span class="feed-col-ago font-mono">${escapeHtml(timeAgoStr)}</span>
   `;
 
   li.addEventListener('click', () => {
@@ -416,9 +417,9 @@ function showInvestigationDrawer(event) {
         const confColor = getConfidenceColor(ioc.confidence);
         return `
           <div class="inv-ioc-row font-mono">
-            <span class="inv-ioc-val" title="${ioc.fullIndicator}">${ioc.indicator}</span>
-            <span class="inv-ioc-type">${ioc.type}</span>
-            <span class="inv-ioc-conf" style="color: ${confColor};">● ${ioc.confidence}</span>
+            <span class="inv-ioc-val" title="${escapeHtml(ioc.fullIndicator)}">${escapeHtml(ioc.indicator)}</span>
+            <span class="inv-ioc-type">${escapeHtml(ioc.type)}</span>
+            <span class="inv-ioc-conf" style="color: ${confColor};">● ${escapeHtml(ioc.confidence)}</span>
           </div>
         `;
       }).join('');

@@ -1,7 +1,11 @@
 import { defineConfig } from 'vite';
 import https from 'https';
 
-const ABUSEIPDB_API_KEY = '15ee4525bb80b3e86917eb91eeb8cc734ccf0b330ff827af688b63ecd8ed0f6bf7a041b3f81debac';
+const ABUSEIPDB_API_KEY = process.env.ABUSEIPDB_API_KEY;
+if (!ABUSEIPDB_API_KEY) {
+  console.warn('WARNING: ABUSEIPDB_API_KEY environment variable not set. API will not function.');
+}
+
 let blacklistCache = null;
 let lastBlacklistFetch = 0;
 
@@ -18,7 +22,13 @@ export default defineConfig({
           const ip = url.searchParams.get('ip');
 
           res.setHeader('Content-Type', 'application/json');
-          res.setHeader('Access-Control-Allow-Origin', '*');
+          
+          // Restrict CORS for dev server
+          const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+          const origin = req.headers.origin;
+          if (allowedOrigins.includes(origin)) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+          }
 
           try {
             if (action === 'blacklist') {

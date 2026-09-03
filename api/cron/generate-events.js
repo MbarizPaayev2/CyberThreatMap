@@ -4,10 +4,14 @@ import MockProvider from '../../lib/providers/mockProvider.js';
 export default async function handler(req, res) {
   // CRON_SECRET yoxlaması - Yalnızca icazəli Vercel mühiti (və ya test edən) bura daxil ola bilər.
   const authHeader = req.headers['authorization'];
-  if (
-    process.env.CRON_SECRET &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  const cronSecret = process.env.CRON_SECRET;
+  
+  if (!cronSecret) {
+    console.error('CRON_SECRET environment variable is not set');
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+  
+  if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

@@ -3,6 +3,7 @@ import { getConfidenceColor } from '../utils/colors.js';
 import { getState, setState, subscribe } from '../state/appState.js';
 import { getFilteredThreatIntel } from '../state/selectors.js';
 import { getThreatIntelFeed } from './threatIntelProvider.js';
+import { escapeHtml } from '../utils/sanitize.js';
 
 let expandedRowId = null;
 
@@ -85,12 +86,12 @@ function openAllIntelModal() {
           const confColor = getConfidenceColor(ioc.confidence);
           return `
             <tr>
-              <td><strong>${ioc.indicator}</strong></td>
-              <td><span class="intel-type-badge badge-${ioc.type.toLowerCase()}">${ioc.type}</span></td>
-              <td><span class="actor-tag">${ioc.threatActor}</span></td>
-              <td><span style="color: ${confColor};">● ${ioc.confidence}</span></td>
-              <td>${ioc.associatedCVE}</td>
-              <td class="text-muted">${ioc.source}</td>
+              <td><strong>${escapeHtml(ioc.indicator)}</strong></td>
+              <td><span class="intel-type-badge badge-${escapeHtml(ioc.type.toLowerCase())}">${escapeHtml(ioc.type)}</span></td>
+              <td><span class="actor-tag">${escapeHtml(ioc.threatActor)}</span></td>
+              <td><span style="color: ${confColor};">● ${escapeHtml(ioc.confidence)}</span></td>
+              <td>${escapeHtml(ioc.associatedCVE)}</td>
+              <td class="text-muted">${escapeHtml(ioc.source)}</td>
               <td style="text-align: right; color: #38BDF8;">${ioc.relatedEvents.toLocaleString()}</td>
             </tr>
           `;
@@ -122,23 +123,23 @@ export function renderThreatIntelTable() {
     const isExpanded = expandedRowId === item.id;
 
     return `
-      <tr class="intel-row ${isExpanded ? 'expanded' : ''}" data-id="${item.id}">
+      <tr class="intel-row ${isExpanded ? 'expanded' : ''}" data-id="${escapeHtml(item.id)}">
         <td class="col-indicator font-mono">
           <span class="expand-chevron">${isExpanded ? '▼' : '▶'}</span>
-          <strong>${item.indicator}</strong>
+          <strong>${escapeHtml(item.indicator)}</strong>
         </td>
         <td>
-          <span class="intel-type-badge badge-${item.type.toLowerCase()}">${item.type}</span>
+          <span class="intel-type-badge badge-${escapeHtml(item.type.toLowerCase())}">${escapeHtml(item.type)}</span>
         </td>
-        <td class="font-mono col-cve">${item.associatedCVE}</td>
-        <td><span class="actor-tag">${item.threatActor}</span></td>
+        <td class="font-mono col-cve">${escapeHtml(item.associatedCVE)}</td>
+        <td><span class="actor-tag">${escapeHtml(item.threatActor)}</span></td>
         <td>
           <span class="confidence-pill" style="color: ${confColor}; border-color: ${confColor}40; background-color: ${confColor}15;">
-            ● ${item.confidence}
+            ● ${escapeHtml(item.confidence)}
           </span>
         </td>
-        <td class="font-mono text-muted col-time">${item.firstSeen}</td>
-        <td class="text-muted col-source">${item.source}</td>
+        <td class="font-mono text-muted col-time">${escapeHtml(item.firstSeen)}</td>
+        <td class="text-muted col-source">${escapeHtml(item.source)}</td>
       </tr>
       ${isExpanded ? `
         <tr class="intel-detail-row">
@@ -147,7 +148,7 @@ export function renderThreatIntelTable() {
               <div class="expanded-grid">
                 <div class="expanded-item">
                   <span class="exp-label">Full Indicator</span>
-                  <span class="exp-val font-mono select-all">${item.fullIndicator}</span>
+                  <span class="exp-val font-mono select-all">${escapeHtml(item.fullIndicator)}</span>
                 </div>
                 <div class="expanded-item">
                   <span class="exp-label">Related Events</span>
@@ -155,7 +156,7 @@ export function renderThreatIntelTable() {
                 </div>
                 <div class="expanded-item span-2">
                   <span class="exp-label">MITRE ATT&CK Reference</span>
-                  <span class="exp-val font-mono">${item.mitre}</span>
+                  <span class="exp-val font-mono">${escapeHtml(item.mitre)}</span>
                 </div>
               </div>
             </div>
