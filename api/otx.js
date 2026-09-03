@@ -103,8 +103,12 @@ export default async function handler(req, res) {
   // Rate limiting
   const clientIP = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
   if (!checkRateLimit(clientIP)) {
+    logRateLimitExceeded('OTX', clientIP, { usage: 'Rate limit exceeded' });
     return res.status(429).json({ error: 'Rate limit exceeded. Please try again later.' });
   }
+
+  // Log API usage
+  logAPIUsage('OTX', action, clientIP, { type, limit });
 
   const { action = 'indicators', type, indicator, limit = 20 } = req.query || {};
 

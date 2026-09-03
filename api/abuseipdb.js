@@ -1,4 +1,5 @@
 import https from 'https';
+import { maskApiKey, logAPIUsage, logRateLimitExceeded, logSecurityViolation } from '../lib/security/auditLogger.js';
 
 const ABUSEIPDB_API_KEY = process.env.ABUSEIPDB_API_KEY;
 if (!ABUSEIPDB_API_KEY) {
@@ -128,6 +129,10 @@ export default async function handler(req, res) {
     if (action === 'blacklist') {
       // Check daily limit
       if (!checkDailyLimit('blacklist')) {
+        logRateLimitExceeded('AbuseIPDB', clientIP, { 
+          endpoint: 'blacklist',
+          usage: `${dailyUsage.blacklist}/${DAILY_LIMITS.blacklist}`
+        });
         return res.status(429).json({ 
           error: 'Daily API limit reached for blacklist endpoint',
           usage: `${dailyUsage.blacklist}/${DAILY_LIMITS.blacklist}`,

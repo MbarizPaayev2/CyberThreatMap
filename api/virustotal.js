@@ -95,11 +95,15 @@ export default async function handler(req, res) {
   // Rate limiting (4/min per IP)
   const clientIP = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
   if (!checkRateLimit(clientIP)) {
+    logRateLimitExceeded('VirusTotal', clientIP, { usage: 'Rate limit exceeded (4/min)' });
     return res.status(429).json({ 
       error: 'Rate limit exceeded. VirusTotal allows 4 requests per minute.',
       retry_after: 60
     });
   }
+
+  // Log API usage
+  logAPIUsage('VirusTotal', action, clientIP, { resource });
 
   const { action = 'ip', resource } = req.query || {};
 
