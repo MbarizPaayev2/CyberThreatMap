@@ -1,4 +1,5 @@
 import supabaseAdmin from '../../lib/supabaseAdmin.js';
+import MockProvider from '../../lib/providers/mockProvider.js';
 import crypto from 'crypto';
 
 // Constant-time comparison to prevent timing attacks
@@ -33,12 +34,28 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Mock data generation disabled - cron endpoint no longer generates fake events
-    // Events come from AbuseIPDB live feed only
+    const provider = new MockProvider();
+    
+    // Hər 1 dəqiqə ərzində neçə event olacaq? (1 ilə 5 arası)
+    const eventCount = Math.floor(Math.random() * 5) + 1;
+    const events = [];
+
+    for (let i = 0; i < eventCount; i++) {
+      events.push(await provider.generateEvent());
+    }
+
+    // Insert events to Supabase DB using the admin service key (RLS bypass)
+    const { data, error } = await supabaseAdmin
+      .from('threat_events')
+      .insert(events)
+      .select();
+
+    if (error) throw error;
+
     return res.status(200).json({
       success: true,
-      message: 'Mock data generation disabled. Using live AbuseIPDB data only.',
-      events: []
+      message: `Generated and inserted ${eventCount} events.`,
+      events: data
     });
 
   } catch (error) {
