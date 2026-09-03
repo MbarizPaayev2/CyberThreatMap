@@ -1,0 +1,21 @@
+{
+  "name": "live-threat-map-vanilla",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:all": "vercel dev",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "chart.js": "^4.4.4",
+    "globe.gl": "^2.32.1"
+  },
+  "devDependencies": {
+    "vercel": "^59.10.0",
+    "vite": "^5.4.2"
+  }
+}

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Cyber Threat Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+
+  <!-- MINIMAL POLISHED TOP BAR -->
+  <header class="top-nav-bar">
+    <div class="nav-brand">
+      <span class="brand-title">Threat Stream</span>
+      <span class="brand-sub">Live Monitor</span>
+    </div>
+
+    <!-- TABS -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="view-map">Globe</button>
+      <button class="nav-tab" data-tab="view-analytics">Analytics</button>
+      <button class="nav-tab" data-tab="view-terminal">Terminal</button>
+    </nav>
+
+    <!-- RIGHT LIVE TELEMETRY STRIP -->
+    <div class="nav-actions">
+      
+      <div class="telemetry-rate-block">
+        <span id="event-rate-val" class="rate-val">0/s</span>
+        <canvas id="rate-sparkline-canvas" width="60" height="20"></canvas>
+      </div>
+
+      <div id="conn-quality" class="conn-quality-block" title="Latency: 38ms">
+        <span class="bar bar-1 active"></span>
+        <span class="bar bar-2 active"></span>
+        <span class="bar bar-3 active"></span>
+      </div>
+
+      <span id="relative-update-time" class="relative-time">Updated just now</span>
+
+    </div>
+  </header>
+
+  <!-- VIEW 1: 3D GLOBE MAP WITH RIGHT COUNTRY DETAIL SIDEBAR -->
+  <main id="view-map" class="tab-view active">
+    <div id="globe-container"></div>
+    
+    <div id="focus-banner" class="focus-banner" style="display:none;">
+      <span id="focus-banner-text">Target Focus: Azerbaijan</span>
+      <button id="clear-focus-btn" class="clear-focus-btn">Reset Focus</button>
+    </div>
+
+    <!-- RIGHT COUNTRY INTELLIGENCE DRAWER -->
+    <aside id="country-detail-panel" class="country-detail-panel" style="display: none;">
+      <!-- Country Identity Header -->
+      <div class="drawer-header">
+        <div>
+          <div class="drawer-country-title" id="detail-country-name">Morocco</div>
+          <div class="drawer-country-sub" id="detail-country-sub">North Africa · Telemetry active</div>
+        </div>
+        <button id="close-detail-panel-btn" class="drawer-close-btn" title="Close Panel">✕</button>
+      </div>
+
+      <!-- Live Activity Badge -->
+      <div class="drawer-activity-bar">
+        <div id="detail-live-status" class="live-activity-indicator live">
+          <span class="activity-dot"></span>
+          <span id="detail-activity-text" class="activity-text font-mono">LIVE · 8 events/min</span>
+        </div>
+      </div>
+
+      <div class="detail-panel-scroll">
+        <!-- Telemetry Summary (No KPI Cards) -->
+        <div class="drawer-telemetry-strip">
+          <div class="telemetry-col">
+            <div class="telemetry-val-group">
+              <span id="detail-inbound-count" class="telemetry-num inbound font-mono">0</span>
+              <span class="telemetry-direction">↘</span>
+            </div>
+            <span class="telemetry-lbl">Inbound</span>
+          </div>
+          <div class="telemetry-divider"></div>
+          <div class="telemetry-col">
+            <div class="telemetry-val-group">
+              <span id="detail-outbound-count" class="telemetry-num outbound font-mono">0</span>
+              <span class="telemetry-direction">↗</span>
+            </div>
+            <span class="telemetry-lbl">Outbound</span>
+          </div>
+        </div>
+
+        <!-- Analytical Severity Breakdown -->
+        <div class="drawer-section">
+          <div class="drawer-section-title">Severity</div>
+          <div id="detail-severity-bars" class="severity-matrix"></div>
+        </div>
+
+        <!-- Top Attack Vectors (Data List) -->
+        <div class="drawer-section">
+          <div class="drawer-section-title">Top attack vectors</div>
+          <div id="detail-attack-types-list" class="vector-matrix"></div>
+        </div>
+
+        <!-- Recent Activity (SOC Log Stream) -->
+        <div class="drawer-section">
+          <div class="drawer-section-title">Recent activity</div>
+          <div id="detail-recent-list" class="recent-event-log"></div>
+        </div>
+
+        <div class="drawer-divider"></div>
+
+        <!-- 1. Risk Level / Verdict Block -->
+        <div class="drawer-section">
+          <div id="detail-risk-block" class="risk-verdict-block risk-elevated">
+            <div class="risk-verdict-header">
+              <span class="risk-verdict-title">Risk level</span>
+              <span id="detail-risk-val" class="risk-verdict-tag font-mono">Elevated</span>
+            </div>
+            <div id="detail-risk-context" class="risk-verdict-context">Above baseline for North Africa region</div>
+          </div>
+        </div>
+
+        <div class="drawer-divider"></div>
+
+        <!-- 2. Activity Trend Mini Sparkline + Peak/Avg -->
+        <div class="drawer-section">
+          <div class="drawer-section-title">Activity trend <span class="trend-timeframe">· Last 60m</span></div>
+          <div class="trend-sparkline-wrapper">
+            <canvas id="country-trend-canvas" width="288" height="65"></canvas>
+          </div>
+          <div class="trend-stats-footer font-mono">
+            <span>Peak: <strong id="country-peak-val">22/min</strong></span>
+            <span>Avg: <strong id="country-avg-val">14/min</strong></span>
+          </div>
+        </div>
+
+        <div class="drawer-divider"></div>
+
+        <!-- 3. Related Indicators (Country-filtered IOCs) -->
+        <div class="drawer-section">
+          <div class="drawer-section-title">Related indicators</div>
+          <div id="detail-ioc-list" class="related-ioc-list"></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="map-overlay-bottom">
+       <div class="filter-group-title">Filters</div>
+       <div id="filter-checkboxes" class="filter-group"></div>
+    </div>
+  </main>
+
+  <!-- VIEW 2: DISTINCT HIERARCHY ANALYTICS DASHBOARD -->
+  <section id="view-analytics" class="tab-view">
+    <div class="analytics-layout">
+      
+      <!-- HERO PANEL: Attack Volume Rate -->
+      <div class="soc-panel hero-volume-panel span-2">
+        <div class="panel-header hero-header">
+          <div>
+            <div class="panel-title-text">Attack Volume Rate</div>
+            <div class="panel-subtitle">Real-time Telemetry (Events / Min)</div>
+          </div>
+
+          <div class="time-window-toggle">
+            <button class="window-btn" data-window="30m">30m</button>
+            <button class="window-btn active" data-window="1h">1h</button>
+            <button class="window-btn" data-window="6h">6h</button>
+          </div>
+          
+          <div class="integrated-stat-block">
+            <div class="stat-meta">
+              <span id="today-counter" class="hero-stat-value">108,000</span>
+              <span class="stat-meta-label">24h Incidents</span>
+            </div>
+            <div id="trend-badge" class="trend-badge-pill trend-up">▲ +14.2%</div>
+          </div>
+        </div>
+
+        <div class="panel-body chart-container-hero">
+          <canvas id="volume-chart"></canvas>
+        </div>
+        
+        <div class="telemetry-footer-bar">
+          <span>Peak: <strong id="telemetry-peak-val">145 / min</strong></span>
+          <span>Average: <strong id="telemetry-avg-val">82 / min</strong></span>
+          <span>Baseline Range: <strong>45-70 / min</strong></span>
+        </div>
+      </div>
+
+      <!-- DONUT PANEL: Attack Type Distribution -->
+      <div class="soc-panel instrument-panel">
+        <div class="panel-header">
+          <span>Attack Type Distribution</span>
+          <span class="panel-tag">Top Categories</span>
+        </div>
+        <div class="panel-body donut-panel-body">
+          <div class="donut-wrapper">
+            <canvas id="attack-type-chart"></canvas>
+            <div class="donut-center-info">
+              <span id="donut-center-value" class="center-val">DDoS</span>
+              <span id="donut-center-label" class="center-sub">42% Dominant</span>
+            </div>
+          </div>
+          <div class="donut-legend-container">
+            <ul id="donut-legend-list" class="legend-list"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- VECTORS PANEL: Top Threat Vectors -->
+      <div class="soc-panel vectors-panel span-3">
+        <div class="panel-header">
+          <span>Top Threat Vectors</span>
+          <span class="panel-tag font-mono">24h Geo Telemetry</span>
+        </div>
+        <div class="panel-body dual-vector-grid">
+          <div class="vector-column">
+            <div class="sub-header">Top origin countries <span class="timeframe-sub">· Last 24h</span></div>
+            <ul id="top-sources-list" class="vector-list"></ul>
+            <div class="vector-view-all">
+              <button class="view-all-link-btn">View all origin countries →</button>
+            </div>
+          </div>
+          <div class="vector-column">
+            <div class="sub-header">Top target countries <span class="timeframe-sub">· Last 24h</span></div>
+            <ul id="top-targets-list" class="vector-list"></ul>
+            <div class="vector-view-all">
+              <button class="view-all-link-btn">View all target countries →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PART 2: THREAT INTELLIGENCE FEED SECTION (NEW) -->
+      <div class="soc-panel threat-intel-panel span-3">
+        <div class="panel-header intel-panel-header">
+          <div>
+            <div class="panel-title-text">Threat Intelligence Feed</div>
+            <div class="panel-subtitle">Live IOC & Campaign Telemetry Console</div>
+          </div>
+
+          <!-- Filter & Search Controls -->
+          <div class="intel-controls-bar">
+            <div class="intel-search-wrapper">
+              <input type="text" id="intel-search-input" class="intel-search-input font-mono" placeholder="Search IOC, CVE, Actor, Source..." />
+            </div>
+            
+            <div class="intel-filter-group">
+              <label class="filter-lbl">Type:</label>
+              <select id="intel-type-filter" class="intel-select font-mono">
+                <option value="All">All</option>
+                <option value="IP">IP</option>
+                <option value="Domain">Domain</option>
+                <option value="Hash">Hash</option>
+                <option value="CVE">CVE</option>
+              </select>
+            </div>
+
+            <div class="intel-filter-group">
+              <label class="filter-lbl">Confidence:</label>
+              <select id="intel-confidence-filter" class="intel-select font-mono">
+                <option value="All">All</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-body intel-table-wrapper">
+          <table class="intel-table">
+            <thead>
+              <tr>
+                <th class="col-indicator">Indicator (IOC)</th>
+                <th>Type</th>
+                <th>Associated CVE</th>
+                <th>Threat Actor / Campaign</th>
+                <th>Confidence</th>
+                <th>First Seen</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody id="threat-intel-tbody">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="intel-footer-bar">
+          <button class="view-all-intel-btn">View All Active Indicators (50+)</button>
+          <span class="intel-sync-status font-mono">Synced with Live Threat Sensor Network</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- VIEW 3: FULL LIVE TERMINAL & INVESTIGATION CONSOLE -->
+  <section id="view-terminal" class="tab-view">
+    <div class="terminal-full-wrapper">
+      
+      <!-- 1. Event Stream Top Bar -->
+      <div class="terminal-main-header">
+        <div>
+          <div class="terminal-main-title">Event Stream</div>
+          <div class="terminal-main-sub">Real-time security telemetry & investigation console</div>
+        </div>
+
+        <div class="terminal-header-meta">
+          <div id="terminal-live-pill" class="terminal-live-pill live">
+            <span class="live-dot-pulse"></span>
+            <span id="terminal-rate-text" class="font-mono">LIVE · 0 events/sec</span>
+          </div>
+          <button id="terminal-pause-btn" class="terminal-btn-sm" title="Toggle stream pause [Space]">Pause Stream</button>
+        </div>
+      </div>
+
+      <!-- 2. Compact Live Telemetry Strip -->
+      <div class="terminal-telemetry-strip font-mono">
+        <div class="strip-item">
+          <div class="strip-val-wrap">
+            <span id="strip-eps-val" class="strip-val">0/s</span>
+            <canvas id="terminal-sparkline-canvas" width="55" height="18"></canvas>
+          </div>
+          <span class="strip-lbl">Events / Sec</span>
+        </div>
+
+        <div class="strip-divider"></div>
+
+        <div class="strip-item">
+          <span id="strip-crit-val" class="strip-val sev-critical">0</span>
+          <span class="strip-lbl">Critical Events</span>
+        </div>
+
+        <div class="strip-divider"></div>
+
+        <div class="strip-item">
+          <span id="strip-high-val" class="strip-val sev-high">0</span>
+          <span class="strip-lbl">High Severity</span>
+        </div>
+
+        <div class="strip-divider"></div>
+
+        <div class="strip-item">
+          <span id="strip-countries-val" class="strip-val">0</span>
+          <span class="strip-lbl">Active Countries</span>
+        </div>
+
+        <div class="strip-divider"></div>
+
+        <div class="strip-item">
+          <span id="strip-lastevt-val" class="strip-val text-muted">just now</span>
+          <span class="strip-lbl">Last Event</span>
+        </div>
+      </div>
+
+      <!-- 3. Filter & Search Toolbar -->
+      <div class="terminal-filter-toolbar">
+        <div class="filter-controls-row">
+          <div class="filter-search-box">
+            <input type="text" id="feed-search-input" class="filter-search-field font-mono" placeholder="Search IP, country, attack type, Event ID... [/]" />
+          </div>
+
+          <div class="severity-segmented-group font-mono">
+            <button class="sev-seg-btn active" data-sev="all">All</button>
+            <button class="sev-seg-btn" data-sev="critical">Critical</button>
+            <button class="sev-seg-btn" data-sev="high">High</button>
+            <button class="sev-seg-btn" data-sev="medium">Medium</button>
+            <button class="sev-seg-btn" data-sev="low">Low</button>
+          </div>
+
+          <!-- Attack Type Filter -->
+          <div class="filter-select-wrap">
+            <select id="feed-attack-filter" class="terminal-select-ctrl font-mono">
+              <option value="all">All Attack Types</option>
+              <option value="DDoS">DDoS</option>
+              <option value="Port Scan">Port Scan</option>
+              <option value="Malware">Malware</option>
+              <option value="Brute Force">Brute Force</option>
+              <option value="Credential Stuffing">Credential Stuffing</option>
+              <option value="Phishing">Phishing</option>
+              <option value="SQL Injection">SQL Injection</option>
+              <option value="Zero-Day Exploit">Zero-Day Exploit</option>
+              <option value="Ransomware">Ransomware</option>
+              <option value="Command Injection">Command Injection</option>
+              <option value="DNS Tunneling">DNS Tunneling</option>
+              <option value="Cross-Site Scripting (XSS)">Cross-Site Scripting (XSS)</option>
+              <option value="Man-in-the-Middle">Man-in-the-Middle</option>
+              <option value="API Abuse">API Abuse</option>
+            </select>
+          </div>
+
+          <!-- Country Filter -->
+          <div class="filter-select-wrap">
+            <select id="feed-country-select" class="terminal-select-ctrl font-mono">
+              <option value="all">Any Country</option>
+              <option value="US">United States (US)</option>
+              <option value="CN">China (CN)</option>
+              <option value="RU">Russia (RU)</option>
+              <option value="AZ">Azerbaijan (AZ)</option>
+              <option value="DE">Germany (DE)</option>
+              <option value="FR">France (FR)</option>
+              <option value="GB">United Kingdom (GB)</option>
+              <option value="BR">Brazil (BR)</option>
+              <option value="JP">Japan (JP)</option>
+              <option value="RO">Romania (RO)</option>
+              <option value="MA">Morocco (MA)</option>
+              <option value="LY">Libya (LY)</option>
+            </select>
+          </div>
+
+          <!-- Time Range Filter -->
+          <div class="filter-select-wrap">
+            <select id="feed-time-range" class="terminal-select-ctrl font-mono">
+              <option value="live">Live Stream</option>
+              <option value="5m">Last 5 min</option>
+              <option value="15m">Last 15 min</option>
+              <option value="1h">Last 1 hour</option>
+              <option value="6h">Last 6 hours</option>
+              <option value="24h">Last 24 hours</option>
+            </select>
+          </div>
+
+          <button id="clear-all-filters-btn" class="clear-filters-btn font-mono" style="display: none;">Clear all</button>
+        </div>
+
+        <!-- Active Filter Chips Area -->
+        <div id="active-chips-container" class="active-chips-container font-mono" style="display: none;"></div>
+      </div>
+
+      <!-- 4. Split Workspace Layout: Main Stream + Right Investigation Drawer -->
+      <div class="terminal-workspace-split">
+        
+        <!-- Main Event Stream Table Area -->
+        <div class="terminal-stream-panel">
+          <!-- Column Headers -->
+          <div class="stream-grid-header font-mono">
+            <span>Timestamp</span>
+            <span>Source</span>
+            <span></span>
+            <span>Target</span>
+            <span>Attack Type</span>
+            <span>Severity</span>
+            <span>Status</span>
+            <span style="text-align: right;">Time Ago</span>
+          </div>
+
+          <!-- Scrollable Event Stream -->
+          <div id="stream-scroll-container" class="stream-scroll-container">
+            <ul id="live-feed-list" class="terminal-events-list"></ul>
+            
+            <!-- Floating New Events Notice Pill -->
+            <button id="jump-to-live-btn" class="jump-live-pill font-mono" style="display: none;">
+              ↓ <span id="jump-live-count">12</span> new events
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Investigation / Event Details Drawer -->
+        <aside id="event-investigation-drawer" class="investigation-drawer" style="display: none;">
+          <div class="drawer-header-bar">
+            <div>
+              <div class="drawer-title" id="inv-attack-type">Zero-Day Exploit</div>
+              <div class="drawer-sub font-mono" id="inv-event-id">EVT-8F21A9</div>
+            </div>
+            <button id="close-inv-drawer-btn" class="drawer-close-btn" title="Close details [Esc]">✕</button>
+          </div>
+
+          <div class="drawer-scroll-body">
+            <!-- Severity & Quick Status -->
+            <div class="inv-badge-strip">
+              <span id="inv-severity-pill" class="inv-sev-tag font-mono">● Critical</span>
+              <span id="inv-time-ago" class="inv-time-tag font-mono">2s ago</span>
+            </div>
+
+            <!-- Route & Endpoints -->
+            <div class="inv-section">
+              <div class="inv-section-title">Endpoints & Network Route</div>
+              <div class="inv-endpoints-grid font-mono">
+                <div class="endpoint-card">
+                  <span class="ep-lbl">Source</span>
+                  <strong class="ep-country" id="inv-src-country">China (CN)</strong>
+                  <span class="ep-ip" id="inv-src-ip">198.51.100.42</span>
+                </div>
+                <div class="endpoint-card">
+                  <span class="ep-lbl">Target</span>
+                  <strong class="ep-country" id="inv-tgt-country">United States (US)</strong>
+                  <span class="ep-ip" id="inv-tgt-ip">203.0.113.88</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Telemetry & Detection Context -->
+            <div class="inv-section">
+              <div class="inv-section-title">Threat Context</div>
+              <div class="inv-details-grid font-mono">
+                <div class="detail-row">
+                  <span class="dt-lbl">Timestamp</span>
+                  <span class="dt-val" id="inv-timestamp">2026-09-02 12:59:31 UTC</span>
+                </div>
+                <div class="detail-row">
+                  <span class="dt-lbl">Detection</span>
+                  <span class="dt-val">Realtime Network IDS Telemetry</span>
+                </div>
+                <div class="detail-row">
+                  <span class="dt-lbl">Traffic Volume</span>
+                  <span class="dt-val">Active Payload Stream</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- MITRE ATT&CK Mapping -->
+            <div class="inv-section">
+              <div class="inv-section-title">MITRE ATT&CK Context</div>
+              <div class="inv-mitre-box font-mono" id="inv-mitre-ref">
+                T1190 — Exploit Public-Facing Application
+              </div>
+            </div>
+
+            <!-- Related Activity in Active Window -->
+            <div class="inv-section">
+              <div class="inv-section-title">Related Activity</div>
+              <div class="inv-related-box font-mono" id="inv-related-text">
+                8 related events involving this threat vector in active buffer
+              </div>
+            </div>
+
+            <!-- Associated Indicators (IOCs) -->
+            <div class="inv-section">
+              <div class="inv-section-title">Related Indicators (IOCs)</div>
+              <div id="inv-iocs-container" class="inv-iocs-list"></div>
+            </div>
+          </div>
+  <!-- REUSABLE FULL DATA MODAL (View All Countries & Indicators) -->
+  <div id="app-data-modal" class="app-modal-overlay" style="display: none;">
+    <div class="app-modal-dialog">
+      <div class="app-modal-header">
+        <div>
+          <div id="app-modal-title" class="app-modal-title">All Countries Intelligence</div>
+          <div id="app-modal-sub" class="app-modal-sub font-mono">Derived from active security telemetry</div>
+        </div>
+        <button id="app-modal-close-btn" class="app-modal-close" title="Close modal [Esc]">✕</button>
+      </div>
+      <div id="app-modal-body" class="app-modal-body">
+        <!-- Dynamically populated content -->
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
