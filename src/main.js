@@ -9,6 +9,7 @@ import { initLiveFeed } from './modules/liveFeed.js';
 import { initThreatIntelPanel } from './modules/threatIntelPanel.js';
 import { initCountryDetail } from './modules/countryDetail.js';
 import { initAbuseIPDBStream } from './modules/abuseipdbProvider.js';
+import { initOTXStream } from './modules/otxProvider.js';
 import { initTelemetryTracker } from './utils/telemetryTracker.js';
 import { qs, setText } from './utils/dom.js';
 
@@ -24,7 +25,7 @@ function startClock() {
 
 // App Initialization
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log("Initializing CyberThreat Map SOC platform with AbuseIPDB integration...");
+  console.log("Initializing CyberThreat Map SOC platform with AbuseIPDB and OTX integration...");
   
   startClock();
   initTelemetryTracker();
@@ -50,4 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize Real Live Threat Ingestion from AbuseIPDB API
   await initAbuseIPDBStream();
+
+  // Initialize Real Live Threat Ingestion from OTX (AlienVault)
+  await initOTXStream();
 });
