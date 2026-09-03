@@ -10,6 +10,43 @@ let blacklistCache = null;
 let lastBlacklistFetch = 0;
 const CACHE_TTL_MS = 60 * 1000; // 1 minute cache
 
+// Daily API usage tracking (limits set to 1 below AbuseIPDB limits)
+const DAILY_LIMITS = {
+  blacklist: 4,    // AbuseIPDB limit: 5
+  check: 999       // AbuseIPDB limit: 1,000
+};
+
+const dailyUsage = {
+  blacklist: 0,
+  check: 0,
+  lastReset: Date.now()
+};
+
+// Reset daily counters at midnight
+function checkAndResetDailyCounters() {
+  const now = Date.now();
+  const oneDay = 24 * 60 * 60 * 1000;
+  
+  if (now - dailyUsage.lastReset >= oneDay) {
+    dailyUsage.blacklist = 0;
+    dailyUsage.check = 0;
+    dailyUsage.lastReset = now;
+    console.log('Daily AbuseIPDB API counters reset');
+  }
+}
+
+function checkDailyLimit(endpoint) {
+  checkAndResetDailyCounters();
+  
+  if (dailyUsage[endpoint] >= DAILY_LIMITS[endpoint]) {
+    console.warn(`AbuseIPDB ${endpoint} daily limit reached (${dailyUsage[endpoint]}/${DAILY_LIMITS[endpoint]})`);
+    return false;
+  }
+  
+  dailyUsage[endpoint]++;
+  return true;
+}
+
 // Input validation helpers
 function isValidIP(ip) {
   const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
@@ -89,6 +126,15 @@ export default async function handler(req, res) {
     }
 
     if (action === 'blacklist') {
+      // Check daily limit
+      if (!checkDailyLimit('blacklist')) {
+        return res.status(429).json({ 
+          error: 'Daily API limit reached for blacklist endpoint',
+          usage: `${dailyUsage.blacklist}/${DAILY_LIMITS.blacklist}`,
+          message: 'Please try again tomorrow'
+        });
+      }
+
       // Validate limit and confidence
       if (!isValidLimit(limit)) {
         return res.status(400).json({ error: 'Invalid limit parameter. Must be between 10 and 100.' });
@@ -113,6 +159,15 @@ export default async function handler(req, res) {
 
       return res.status(200).json({ source: 'live', ...data });
     } else if (action === 'check') {
+      // Check daily limit
+      if (!checkDailyLimit('check')) {
+        return res.status(429).json({ 
+          error: 'Daily API limit reached for check endpoint',
+          usage: `${dailyUsage.check}/${DAILY_LIMITS.check}`,
+          message: 'Please try again tomorrow'
+        });
+      }
+
       // Validate IP
       if (!ip || !isValidIP(ip)) {
         return res.status(400).json({ error: 'Invalid IP address parameter' });

@@ -22,6 +22,11 @@ export async function fetchAbuseIPDBBlacklist(limit = 60, minConfidence = 75) {
   try {
     const res = await fetch(`/api/abuseipdb?action=blacklist&limit=${limit}&confidenceMinimum=${minConfidence}`);
     if (!res.ok) {
+      if (res.status === 429) {
+        console.warn('AbuseIPDB daily limit reached. Using cached data if available.');
+        // Return cached data if available, otherwise empty array
+        return cachedAbuseIPs.length > 0 ? cachedAbuseIPs : [];
+      }
       console.warn('AbuseIPDB API endpoint returned status:', res.status);
       return [];
     }
@@ -33,7 +38,8 @@ export async function fetchAbuseIPDBBlacklist(limit = 60, minConfidence = 75) {
     return [];
   } catch (err) {
     console.warn('Failed to fetch from AbuseIPDB API:', err);
-    return [];
+    // Return cached data on error if available
+    return cachedAbuseIPs.length > 0 ? cachedAbuseIPs : [];
   }
 }
 
@@ -41,7 +47,12 @@ export async function checkIPDetails(ip) {
   if (!ip) return null;
   try {
     const res = await fetch(`/api/abuseipdb?action=check&ip=${encodeURIComponent(ip)}`);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      if (res.status === 429) {
+        console.warn('AbuseIPDB daily limit reached for check endpoint.');
+      }
+      return null;
+    }
     const json = await res.json();
     return json.data || null;
   } catch (err) {
@@ -76,8 +87,12 @@ export async function initAbuseIPDBStream() {
   startLiveThreatDispatcher();
 
   // 3. Periodic refresh of blacklisted IPs every 3 minutes (respecting AbuseIPDB free tier limits)
+  // Note: Daily limit is 4 calls, so this will stop working after 4 calls until next day
   setInterval(async () => {
-    await fetchAbuseIPDBBlacklist(80, 75);
+    const result = await fetchAbuseIPDBBlacklist(80, 75);
+    if (result.length === 0 && cachedAbuseIPs.length === 0) {
+      console.warn('AbuseIPDB daily limit reached - no new data until tomorrow');
+    }
   }, 3 * 60 * 1000);
 }
 
