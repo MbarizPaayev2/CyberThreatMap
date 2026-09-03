@@ -1,8 +1,8 @@
-# 🌐 Live Cyber Threat Map
+#  Live Cyber Threat Map
 
 A real-time global cyber attack visualization dashboard built with Vanilla JavaScript, Vite, Globe.gl, Chart.js, and Supabase.
 
-## 🏗️ Architecture
+## Architecture
 
 - **Frontend**: Vanilla JS (ES6 Modules), HTML5, CSS3, Vite
 - **3D Visualization**: Globe.gl (Three.js)
@@ -10,7 +10,7 @@ A real-time global cyber attack visualization dashboard built with Vanilla JavaS
 - **Backend / Real-time**: Supabase (PostgreSQL + Realtime subscriptions)
 - **Cron Jobs & APIs**: Vercel Serverless Functions
 
-## 🚀 Setup & Local Development
+##  Setup & Local Development
 
 ### 1. Install Dependencies
 ```bash
@@ -49,7 +49,7 @@ Since cron jobs don't run automatically in local dev unless simulated, you can m
 curl -H "Authorization: Bearer <YOUR_CRON_SECRET>" http://localhost:3000/api/cron/generate-events
 ```
 
-## ☁️ Deployment (Vercel)
+##  Deployment (Vercel)
 
 1. Connect your GitHub repository to Vercel.
 2. In the Vercel project settings, add all the environment variables from your `.env.local`.
