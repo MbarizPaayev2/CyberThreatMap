@@ -9,6 +9,11 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+
+  // Add security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
   
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -21,6 +26,7 @@ export default async function handler(req, res) {
     return res.status(200).json(data);
   } catch (error) {
     console.error("Attack type breakdown error:", error);
-    return res.status(500).json({ error: error.message });
+    const errorMessage = process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message;
+    return res.status(500).json({ error: errorMessage });
   }
 }

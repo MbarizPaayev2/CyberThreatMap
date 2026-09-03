@@ -8,6 +8,11 @@ export default async function handler(req, res) {
   if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
+
+  // Add security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
   
   try {
     // Sadə bir SELECT sorğusu ilə bazanın yaşamasını yoxlayırıq
@@ -20,6 +25,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ status: 'ok', database: 'connected' });
   } catch (err) {
-    return res.status(503).json({ status: 'error', message: err.message });
+    const errorMessage = process.env.NODE_ENV === 'production' ? 'Service unavailable' : err.message;
+    return res.status(503).json({ status: 'error', message: errorMessage });
   }
 }

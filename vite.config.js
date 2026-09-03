@@ -9,6 +9,26 @@ if (!ABUSEIPDB_API_KEY) {
 let blacklistCache = null;
 let lastBlacklistFetch = 0;
 
+// Input validation helpers (same as production)
+function isValidIP(ip) {
+  const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+  return ipRegex.test(ip);
+}
+
+function isValidAction(action) {
+  return ['blacklist', 'check'].includes(action);
+}
+
+function isValidLimit(limit) {
+  const num = parseInt(limit, 10);
+  return !isNaN(num) && num >= 10 && num <= 100;
+}
+
+function isValidConfidence(conf) {
+  const num = parseInt(conf, 10);
+  return !isNaN(num) && num >= 50 && num <= 100;
+}
+
 export default defineConfig({
   plugins: [
     {
@@ -30,20 +50,54 @@ export default defineConfig({
             res.setHeader('Access-Control-Allow-Origin', origin);
           }
 
+          // Add security headers
+          res.setHeader('X-Content-Type-Options', 'nosniff');
+          res.setHeader('X-Frame-Options', 'DENY');
+          res.setHeader('X-XSS-Protection', '1; mode=block');
+
           try {
+            // Validate action
+            if (!isValidAction(action)) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: 'Invalid action parameter' }));
+              return;
+            }
+
             if (action === 'blacklist') {
+              // Validate limit and confidence
+              if (!isValidLimit(limit)) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Invalid limit parameter. Must be between 10 and 100.' }));
+                return;
+              }
+              if (!isValidConfidence(confidenceMinimum)) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Invalid confidenceMinimum parameter. Must be between 50 and 100.' }));
+                return;
+              }
+
               const now = Date.now();
               if (blacklistCache && (now - lastBlacklistFetch < 60000)) {
                 res.end(JSON.stringify({ source: 'cache', ...blacklistCache }));
                 return;
               }
 
-              const path = `/api/v2/blacklist?confidenceMinimum=${confidenceMinimum}&limit=${limit}`;
+              const limitNum = parseInt(limit, 10);
+              const confNum = parseInt(confidenceMinimum, 10);
+
+              const path = `/api/v2/blacklist?confidenceMinimum=${confNum}&limit=${limitNum}`;
               const data = await fetchFromAbuseIPDB(path);
               blacklistCache = data;
               lastBlacklistFetch = now;
               res.end(JSON.stringify({ source: 'live', ...data }));
-            } else if (action === 'check' && ip) {
+            } else if (action === 'check') {
+              // Validate IP
+              if (!ip || !isValidIP(ip)) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Invalid IP address parameter' }));
+                return;
+              }
+
               const path = `/api/v2/check?ipAddress=${encodeURIComponent(ip)}&verbose=true&maxAgeInDays=90`;
               const data = await fetchFromAbuseIPDB(path);
               res.end(JSON.stringify(data));
@@ -54,7 +108,7 @@ export default defineConfig({
           } catch (e) {
             console.error('Vite AbuseIPDB middleware error:', e);
             res.statusCode = 500;
-            res.end(JSON.stringify({ error: e.message }));
+            res.end(JSON.stringify({ error: 'Internal server error' }));
           }
         });
       }

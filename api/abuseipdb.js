@@ -62,6 +62,14 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Key');
 
+  // Add security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -118,7 +126,11 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error('AbuseIPDB API Error:', error);
-    return res.status(500).json({ error: error.message || 'Failed to fetch from AbuseIPDB' });
+    // Use generic error message for production
+    const errorMessage = process.env.NODE_ENV === 'production' 
+      ? 'Internal server error' 
+      : (error.message || 'Failed to fetch from AbuseIPDB');
+    return res.status(500).json({ error: errorMessage });
   }
 }
 
