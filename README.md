@@ -1,8 +1,8 @@
-# 🌐 Live Cyber Threat Map
+#  Live Cyber Threat Map
 
 A real-time global cyber attack visualization dashboard built with Vanilla JavaScript, Vite, Globe.gl, Chart.js, and Supabase.
 
-## 🏗️ Architecture
+## Architecture
 
 - **Frontend**: Vanilla JS (ES6 Modules), HTML5, CSS3, Vite
 - **3D Visualization**: Globe.gl (Three.js)
@@ -10,7 +10,7 @@ A real-time global cyber attack visualization dashboard built with Vanilla JavaS
 - **Backend / Real-time**: Supabase (PostgreSQL + Realtime subscriptions)
 - **Cron Jobs & APIs**: Vercel Serverless Functions
 
-## 🚀 Setup & Local Development
+##  Setup & Local Development
 
 ### 1. Install Dependencies
 ```bash
