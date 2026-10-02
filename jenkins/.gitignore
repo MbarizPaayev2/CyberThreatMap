@@ -1,0 +1,12 @@
+# Environment files with actual values
+.env
+.env.local
+.env.production
+
+# Jenkins workspace artifacts
+workspace/
+*.log
+
+# Temporary files
+*.tmp
+*.temp

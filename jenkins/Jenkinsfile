@@ -1,0 +1,115 @@
+pipeline {
+    agent any
+
+    environment {
+        NODE_VERSION = '18'
+        NODE_HOME = tool name: 'NodeJS', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+        timeout(time: 30, unit: 'MINUTES')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    sh 'git clean -fdx'
+                }
+            }
+        }
+
+        stage('Setup Node.js') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh """
+                            export PATH=\$NODE_HOME/bin:\$PATH
+                            node --version
+                            npm --version
+                        """
+                    } else {
+                        bat """
+                            set PATH=%NODE_HOME%;%PATH%
+                            node --version
+                            npm --version
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh 'npm ci --prefer-offline --no-audit'
+                    } else {
+                        bat 'npm ci --prefer-offline --no-audit'
+                    }
+                }
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                script {
+                    // Add linting if ESLint is configured
+                    echo 'Lint stage - configure ESLint to enable'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh 'npm run build'
+                    } else {
+                        bat 'npm run build'
+                    }
+                }
+            }
+        }
+
+        stage('Archive Artifacts') {
+            steps {
+                archiveArtifacts artifacts: 'dist/**/*', fingerprint: true
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'master'
+                }
+            }
+            steps {
+                script {
+                    echo 'Deploy stage - configure deployment target'
+                    // Example: Deploy to Vercel, AWS S3, or other hosting
+                    // if (isUnix()) {
+                    //     sh 'npm install -g vercel'
+                    //     sh 'vercel --prod --token=${VERCEL_TOKEN}'
+                    // }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build succeeded!'
+        }
+        failure {
+            echo 'Build failed!'
+        }
+        always {
+            cleanWs()
+        }
+    }
+}

@@ -56,6 +56,25 @@ curl -H "Authorization: Bearer <YOUR_CRON_SECRET>" http://localhost:3000/api/cro
 3. Vercel will automatically read `vercel.json` and set up the cron jobs to run every minute for generating events, and daily for cleaning up old data.
 4. Deploy!
 
+##  CI/CD (Jenkins)
+
+For Jenkins-based CI/CD, see the `jenkins/` directory:
+
+1. Navigate to the `jenkins/` folder
+2. Run the setup script:
+   - **Linux/Mac**: `bash jenkins/setup.sh`
+   - **Windows**: `jenkins\setup.bat`
+3. Follow the instructions in `jenkins/README.md` to configure Jenkins
+
+The Jenkins pipeline includes:
+- Automated builds with Node.js
+- Dependency installation
+- Production build optimization
+- Artifact archiving
+- Optional deployment to Vercel or other platforms
+
+See [jenkins/README.md](jenkins/README.md) for detailed setup instructions.
+
 ## 🔌 Provider Pattern (Extending the Backend)
 Currently, the backend uses `MockProvider` to generate fake threat data. To switch to a real API (like AbuseIPDB, Shodan):
 1. Create a new provider class in `lib/providers/` extending `ThreatDataProvider`.
