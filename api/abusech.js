@@ -1,10 +1,11 @@
 import https from 'https';
 import { logAPIUsage, logRateLimitExceeded } from '../lib/security/auditLogger.js';
+import { initializeAPIKeys, getAPIKey, validateAPIRequest, PERMISSION_LEVELS } from '../lib/security/permissions.js';
 
-const ABUSE_CH_AUTH_KEY = process.env.ABUSE_CH_AUTH_KEY;
-if (!ABUSE_CH_AUTH_KEY) {
-  throw new Error('ABUSE_CH_AUTH_KEY environment variable is required');
-}
+// Initialize API keys from environment variables (one-time setup)
+initializeAPIKeys();
+
+const ABUSE_CH_AUTH_KEY = getAPIKey('ABUSE_CH') || process.env.ABUSE_CH_AUTH_KEY || null;
 
 // Daily API usage tracking (Abuse.ch free tier limits)
 const DAILY_LIMITS = {

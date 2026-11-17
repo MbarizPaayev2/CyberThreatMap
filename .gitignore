@@ -16,3 +16,8 @@ yarn-error.log*
 *.swo
 *~
 logs/
+
+# Ignore external workspace scripts
+*.py
+*.sql
+*.zip

@@ -1,9 +1,11 @@
 import https from 'https';
+import { logAPIUsage, logRateLimitExceeded } from '../lib/security/auditLogger.js';
+import { initializeAPIKeys, getAPIKey, validateAPIRequest, PERMISSION_LEVELS } from '../lib/security/permissions.js';
 
-const VIRUSTOTAL_API_KEY = process.env.VIRUSTOTAL_API_KEY;
-if (!VIRUSTOTAL_API_KEY) {
-  throw new Error('VIRUSTOTAL_API_KEY environment variable is required');
-}
+// Initialize API keys from environment variables (one-time setup)
+initializeAPIKeys();
+
+const VIRUSTOTAL_API_KEY = getAPIKey('VIRUSTOTAL') || process.env.VIRUSTOTAL_API_KEY || null;
 
 // Daily API usage tracking (VirusTotal free tier limits)
 const DAILY_LIMITS = {
